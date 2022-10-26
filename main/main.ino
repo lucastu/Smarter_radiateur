@@ -15,7 +15,6 @@ U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
 bool display_asked = true;
 
-
 void setup()
 {
   pinMode(relayPin, OUTPUT);
@@ -26,11 +25,9 @@ void setup()
 
 void loop()
 {
-
   if (display_asked){
 	  display.fillScreen(GxEPD_WHITE);
-	  displayValues();
-
+	  testdisplayValues();
   }
   delay(1000);  
 }
@@ -45,7 +42,7 @@ void setFilPiloteState(bool State){
 	}
 }
 
-void displayValues()
+void testdisplayValues()
 {
   
   float number; //A0 Value
