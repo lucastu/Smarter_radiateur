@@ -1,3 +1,6 @@
+
+#define relayPin 5
+
 #define ENABLE_GxEPD2_GFX 0
 #include <GxEPD2_BW.h>
 #include <U8g2_for_Adafruit_GFX.h>
@@ -10,8 +13,12 @@ GxEPD2_BW<GxEPD2_290, MAX_HEIGHT(GxEPD2_290)> display(GxEPD2_290(/*CS=10*/ SS, /
 
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
+bool display_asked = true;
+
+
 void setup()
 {
+  pinMode(relayPin, OUTPUT);
   display.init();
   u8g2Fonts.begin(display); // connect u8g2 procedures to Adafruit GFX
   delay(1000);
@@ -19,11 +26,24 @@ void setup()
 
 void loop()
 {
-  display.fillScreen(GxEPD_WHITE);
-  displayValues();
+
+  if (display_asked){
+	  display.fillScreen(GxEPD_WHITE);
+	  displayValues();
+
+  }
   delay(1000);  
 }
 
+void setFilPiloteState(bool State){
+	// Commande le relais du fil pilote 
+	if (State){
+		digitalWrite(relayPin, HIGH);
+	}
+	else{
+	digitalWrite(relayPin, LOW);
+	}
+}
 
 void displayValues()
 {
