@@ -4,21 +4,18 @@
 #include <DS3231.h>//https://github.com/NorthernWidget/DS3231
 
 //Variables
-byte Hour ;
-byte Minute ;
-byte Second ;
+int Hour ;
+int Minute ;
+int Second ;
 bool h12 ;
 bool PM ;
 //Objects
-
 DS3231 Clock;
 void setup() {
  	//Init Serial USB
  	Serial.begin(9600);
- 	Serial.println(F("Initialize System"));
  	Wire.begin();
-  
-  testsetDate(12, 11, 00);
+  testsetDate(12, 11);
 }
 
 void loop() {
@@ -26,7 +23,7 @@ void loop() {
   delay(1000);
 }
 
-void testsetDate(bool Hour, bool Minute, bool Second){
+void testsetDate(int Hour, int Minute){
   // Function just for test purpose
   
   Serial.print("Setting date to : ");
@@ -34,10 +31,9 @@ void testsetDate(bool Hour, bool Minute, bool Second){
   Serial.print("H ");
   Serial.print(Minute);
   Serial.print("m ");
-  Serial.print(Second);
-  Serial.println("s");
+  Serial.println("0s");
   
- 	setDate(Hour, Minute, Second);
+ 	setDate(Hour, Minute);
 }
 
 void readRTC( ) { /* function readRTC */
@@ -49,13 +45,13 @@ void readRTC( ) { /* function readRTC */
  	Serial.println(Clock.getSecond(), DEC);
 }
 
-void setDate(bool Hour, bool Minute, bool Second) {
+void setDate(int Hour, int Minute) {
  	////Set Real Time Clock
- 	if (Serial.available()) {
+
  			Clock.setClockMode(false); 	// set to 24h
- 			Clock.setSecond(Second);
  			Clock.setMinute(Minute);
  			Clock.setHour(Hour);
+      Clock.setSecond(0);
       Serial.println("Clock set OK ! ");
- 	}
+ 	
 }
