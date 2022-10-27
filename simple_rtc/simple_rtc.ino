@@ -47,11 +47,9 @@ void readRTC( ) { /* function readRTC */
 
 void setDate(int Hour, int Minute) {
  	////Set Real Time Clock
-
- 			Clock.setClockMode(false); 	// set to 24h
- 			Clock.setMinute(Minute);
- 			Clock.setHour(Hour);
-      Clock.setSecond(0);
-      Serial.println("Clock set OK ! ");
- 	
+  Clock.setClockMode(false); 	// set to 24h
+  Clock.setMinute(Minute);
+  Clock.setHour(Hour);
+  Clock.setSecond(0);
+  Serial.println("Clock set OK ! ");
 }
