@@ -22,7 +22,9 @@ bool h12;
 bool PM;
 
 byte startHeatingTOTD = 0;  //TOTD = Time Of The Day
-bool heatingProgrammed = false;
+byte stopHeatingTOTD = 0;
+byte heatingProgramState = 0; // 0 : not programmed; 1 : for the next day; 2 : now
+bool heatingState = false;
 bool relayState = false;
 byte TimeOftheDay;
 byte heatingDuration = 30;  //in minute
@@ -64,7 +66,7 @@ void loop() {
   //get the time of the day
 
   //Serial.println(TimeOftheDay);
-  if (heatingProgrammed) {
+  if (heatingProgramState) {
     //Add displaying of the info
     if ((TimeOftheDay >= startHeatingTOTD) && (TimeOftheDay <= (startHeatingTOTD + heatingDuration))) {
       Serial.println("heating");
@@ -72,7 +74,7 @@ void loop() {
     } else {
       Serial.println("stop heating");
       setFilPiloteState(false);
-      heatingProgrammed = false;
+      heatingProgramState = 0;
     }
   }
   // if (digitalRead(buttonpin) == LOW && !buttonLastState) {
@@ -84,7 +86,6 @@ void loop() {
   //   buttonLastState = false;
   // }
   if (digitalRead(buttonpin) == LOW ) {
-    //Serial.println("appuyé");
     timeWhenPressed = millis();
     while (digitalRead(buttonpin) == LOW){
       delay(10);
@@ -97,6 +98,31 @@ void loop() {
     }
   }
   //delay(100);
+}
+
+void HeatNow(byte mode){
+  if (mode=0){
+    //Stop heating
+    heatingProgramState = 0;
+    setFilPiloteState(false);
+  }
+  else if (mode=1){
+    if(!heatingState){
+      //start 60min count down
+      heatingProgramState =  2 ;
+    }
+    else {
+      // add 15min up to 180min  
+      //but can't last after midnight (may be possible but lot of work)    
+      heatingProgramState =  2 ;
+      if (stopHeatingTOTD <= (60*24)){
+        stopHeatingTOTD = stopHeatingTOTD + 15 ;     
+      }
+
+
+    }
+  }
+
 }
 
 void setDate(byte Hour, byte Minute) {
@@ -117,7 +143,6 @@ byte ReadTimeOfTheDay() {
   byte minuteOftheDay = Clock.getHour(h12, PM) * 60 + Clock.getMinute();
   return minuteOftheDay;
 }
-
 
 void setFilPiloteState(bool State) {
   // Commande le relais du fil pilote
