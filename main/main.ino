@@ -13,24 +13,23 @@
 GxEPD2_BW<GxEPD2_213_T5D, MAX_HEIGHT(GxEPD2_213_T5D)> display(GxEPD2_213_T5D(/*CS=*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*BUSY=*/ 7)); // GDEW0213T5D 104x212, UC8151D
 #endif
 
-U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
-
 //Variables
 bool display_asked = true;
 char Hour[] ;
 char Minute[] ;
 bool h12 ;
 bool PM ;
-//Objects
-DS3231 Clock;
 
-byte lastMinute = 0;
-//TOTD = Time Of The Day
-byte startHeatingTOTD = 0;
+byte startHeatingTOTD = 0; //TOTD = Time Of The Day
 bool heatingProgrammed = false;
 bool relayState = false;
 byte minuteOftheDay;
 byte heatingDuration = 30; //in minute
+byte lastMinute = 0;
+
+//Objects
+DS3231 Clock;
+U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
 void setup()
 {
@@ -142,7 +141,7 @@ void updateTimeDisplay(){
   u8g2Fonts.setBackgroundColor(bg);         // apply Adafruit GFX color
   u8g2Fonts.setFont(u8g2_font_logisoso32_tr); //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
   
-  display.setPartialWindow(0, 0, display.width(), display.height()); //this sets a window for the partial update, so the values can update without refreshing the entire screen.
+  display.setPartialWindow(0, 0, display.width(), display.height()/2); //this sets a window for the partial update, so the values can update without refreshing the entire screen.
   //https://forum.arduino.cc/t/e-paper-partial-update-i-dont-know-how/527555/8
   //display.setPartialWindow(0, 90, 128, 25); // x,y,width,height
   display.firstPage();
@@ -187,16 +186,6 @@ void testdisplayValues()
   do
   {
     display.fillScreen(bg);
-    // Display first line
-    //u8g2Fonts.setCursor(x, y); 
-    //Hour = Clock.getHour(h12, PM);
-    //Hour = 2
-    //Minute = Clock.getMinute();
-	  
-    //u8g2Fonts.printf("%02d", Hour);
-    //u8g2Fonts.print(":");
-    //u8g2Fonts.printf(Minute, DEC);        
-    // Display first line
     u8g2Fonts.setCursor(x-50, y+50); 
     u8g2Fonts.print("Mon Chaton");
   }
