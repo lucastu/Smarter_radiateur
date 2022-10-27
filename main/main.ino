@@ -50,7 +50,9 @@ void loop()
 	  display.fillScreen(GxEPD_WHITE);
 	  testdisplayValues();
 	  display_asked = false;
+	  
 	  drawCornerTest(); //test from https://github.com/ZinggJM/GxEPD2/blob/master/examples/GxEPD2_Example/GxEPD2_Example.ino
+	  TestPartialUpdate();
   }
 	
   //Update time on the screen if needed
@@ -102,6 +104,32 @@ void setFilPiloteState(bool State){
 	else{
 		digitalWrite(relayPin, LOW);
 	}
+}
+
+void TestPartialUpdate(){
+  display.setRotation(1); // 0--> No rotation ,  1--> rotate 90 deg
+  uint16_t bg = GxEPD_WHITE;
+  uint16_t fg = GxEPD_BLACK;
+  u8g2Fonts.setFontMode(1);                 // use u8g2 transparent mode (this is default)
+  u8g2Fonts.setFontDirection(0);            // left to right (this is default)
+  u8g2Fonts.setForegroundColor(fg);         // apply Adafruit GFX color
+  u8g2Fonts.setBackgroundColor(bg);         // apply Adafruit GFX color
+  u8g2Fonts.setFont(u8g2_font_logisoso32_tr); //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
+  
+  //display.setPartialWindow(0, 0, display.width(), display.height()); //this sets a window for the partial update, so the values can update without refreshing the entire screen.
+  display.setPartialWindow(0, 0, display.width()/2, display.height())/2; 
+  //https://forum.arduino.cc/t/e-paper-partial-update-i-dont-know-how/527555/8
+  //display.setPartialWindow(0, 90, 128, 25); // x,y,width,height
+  display.firstPage();
+  do
+  {
+    display.fillScreen(bg);
+    // Display first line
+    //u8g2Fonts.setCursor(0, 0); 
+    display.fillScreen(GxEPD_WHITE);
+    display.fillRect(0, 0, display.width(), display.height()) , GxEPD_BLACK);
+  }
+  while (display.nextPage());	
 }
 
 void updateTimeDisplay(){
