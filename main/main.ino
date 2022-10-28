@@ -33,6 +33,7 @@ byte lastMinute = 0;
 unsigned long timeWhenPressed;
 int buttonState = 0;
 bool buttonLastState = false;
+bool nextday;
 //Objects
 DS3231 Clock;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
@@ -45,13 +46,12 @@ void setup() {
   //For the RTC
   Serial.begin(9600);
   Wire.begin();  //PIN XX & XX
-  //setDate(17, 41);
   pinMode(button1pin, INPUT_PULLUP);
   pinMode(button2pin, INPUT_PULLUP);
   }
 
 void loop() {
-  
+
   TimeOftheDay = ReadTimeOfTheDay();
   //Update time on the screen if needed
   if (TimeOftheDay != lastMinute) {
@@ -60,106 +60,81 @@ void loop() {
   }
   lastMinute = TimeOftheDay;
 
-  if (heatingProgramState) {
-    //Add displaying of the info
-    if ((TimeOftheDay >= startHeatingTOTD) && (TimeOftheDay <= (startHeatingTOTD + heatingDuration))) {
-      Serial.println("heating");
-      setFilPiloteState(true);
-    } else {
-      Serial.println("stop heating");
-      setFilPiloteState(false);
-      heatingProgramState = 0;
-    }
-  }
-  
-  // Bouton Chauffage programmé (horloge)
-  if (digitalRead(button2pin) == LOW ) {
-    timeWhenPressed = millis();
-    while (digitalRead(button2pin) == LOW){
-      delay(10);
-    }
-    if (millis()-timeWhenPressed >1000){
-		Serial.println("Reglage horloge");
-		changingClock();
-    }else{
-		Serial.println("Programme du matin");
-		if (heatingProgramState == 2) HeatNow(0);
-        //HeatProgramming();    
-    }
-  }
-  
-  //Bouton chauffage instantannée
-  if (digitalRead(button1pin) == LOW ) {
-    timeWhenPressed = millis();
-    while (digitalRead(button1pin) == LOW){
-      delay(10);
-    }
-    if (millis()-timeWhenPressed >500){
-		HeatNow(0);
-    }
-    else{
-        HeatNow(1);    
-    }
-  }
-  HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
-  if (heatingProgramState = 2 && HeatingTimeLeft =<0) HeatNow(0);
-  // si on chauffe mais que le compteur de temps est arrivé a 0 on coupe
+  if (heatingProgramState ==0){
+	  // Bouton Chauffage programmé (horloge)
+			  if (digitalRead(button2pin) == LOW ) {
+				timeWhenPressed = millis();
+				while (digitalRead(button2pin) == LOW){
+				  delay(10);
+				}
+				if (millis()-timeWhenPressed >1000){ //long Press
+					Serial.println("Reglage horloge");
+					changingClock();
+				}else{ //Short Press
+						//Ajouteractiver chauffe programmée à 5h (heatingProgramState)
+						//Ajouter Changer Boutons écrans
+				}
+			  }
 
-  //delay(100);
+				if (digitalRead(button1pin) == LOW ) {
+					while (digitalRead(button1pin) == LOW) delay(10);
+					heatingProgramState  =2;
+					stopHeatingTOTD = TimeOftheDay+60;
+					//Ajouter Changer Boutons écrans
+			  }
+		}
+		else if (heatingProgramState == 1){  // Mode Programmed heating
+			  if (digitalRead(button1pin) == LOW ) {
+				while (digitalRead(button1pin) == LOW){
+				  delay(10);
+				}
+				//=> repousser chauffe programmée à + 1h
+			  }
+
+			  if (digitalRead(button2pin) == LOW ) {
+				while (digitalRead(button2pin) == LOW){
+				  delay(10);
+				}
+				StopHeating();
+			  }
+			   if (!nextday && TimeOftheDay==0)	 nextday = true;
+			   if (nextday){
+				   if (TimeOftheDay >= startHeatingTOTD && TimeOftheDay < stopHeatingTOTD) StartHeating();
+				   else if (TimeOftheDay > stopHeatingTOTD) StopHeating();
+			   }
+		}
+		else if (heatingProgramState == 2){  // Mode heating Now
+			  if (digitalRead(button1pin) == LOW ) {
+				while (digitalRead(button1pin) == LOW){
+				  delay(10);
+				}
+				stopHeatingTOTD = stopHeatingTOTD +15; //Add a limit
+			  }
+
+			  if (digitalRead(button2pin) == LOW ) {
+				while (digitalRead(button2pin) == LOW){
+				  delay(10);
+				}
+				StopHeating();
+			  }
+			if (TimeOftheDay>=stopHeatingTOTD) StopHeating();
+		}
 }
 
-void changingClock(){
- byte Hour = Clock.getHour(h12, PM);
- byte Minute = Clock.getMinute();
- //Boucle de reglage où pour sortir il faut
- //Soit du temps sans toucher les boutons (genre 5sec)
- //Soit un appui long sur 1 des deux boutons
- setDate(Hour, Minute);
-}
-
-void HeatNow(byte mode){
-  if (mode=0){
-    //Stop heating
-    heatingProgramState = 0;
+void StopHeating(){
+	heatingProgramState = 0;
     setFilPiloteState(false);
-  }
-  else if (mode=1){
-    if(heatingProgramState == 0){
-      // start 60min count down
-	  // but can't be after 23h59 (may be possible but lot of work) 
-	  if (ReadTimeOfTheDay() + 60 <= LastTOTD){
-		  stopHeatingTOTD = ReadTimeOfTheDay() + 60; 
-	  }
-	  else {
-		  stopHeatingTOTD = LastTOTD;
-	  }
-      heatingProgramState =  2 ;
-	  setFilPiloteState(true);
-	  
-    }
-    else {
-      // add 15min up to 180min  
-      // but can't last after 23h59 (may be possible but lot of work)    
-      heatingProgramState =  2 ;
-      if (stopHeatingTOTD <= (LastTOTD)){
-        stopHeatingTOTD = stopHeatingTOTD + 15 ;     
-      }
-    }
-  }
+	// Réaffiche les icones de base
 }
+
 
 void setDate(byte Hour, byte Minute) {
-  //Set Real Time Clock
+  //Set RTC
   Clock.setClockMode(false);  // set to 24h
   Clock.setMinute(Minute);
   Clock.setHour(Hour);
   Clock.setSecond(0);
   Serial.println("Clock set OK ! ");
-}
-
-byte TominuteOfTheDay(byte Hour, byte Minute) {  //Transform the time in hour, minute to a count of all the minutes since the day started
-  byte minuteOftheDay = Hour * 60 + Minute;
-  return minuteOftheDay;
 }
 
 byte ReadTimeOfTheDay() {
@@ -176,6 +151,43 @@ void setFilPiloteState(bool State) {
     digitalWrite(relayPin, LOW);
 	Serial.println("Heating Stopped");
   }
+}
+
+void changingClock(){
+ byte Hour = Clock.getHour(h12, PM);
+ byte Minute = Clock.getMinute();
+ //Changer les logos en Minute+ et heure +
+ //Boucle de reglage où pour sortir il faut
+ //Soit du temps sans toucher les boutons (genre 5sec)
+ //Soit un appui long sur 1 des deux boutons
+ //Remettre les logos normaux
+ setDate(Hour, Minute);
+}
+
+void displayIcon(byte icon1, byte icon2){
+  //Used to set icon above button 1 & 2 according to the variables
+  display.setRotation(1);  // 0--> No rotation ,  1--> rotate 90 deg
+  uint16_t bg = GxEPD_WHITE;
+  uint16_t fg = GxEPD_BLACK;
+  u8g2Fonts.setFontMode(1);                    // use u8g2 transparent mode (this is default)
+  u8g2Fonts.setFontDirection(0);               // left to right (this is default)
+  u8g2Fonts.setForegroundColor(fg);            // apply Adafruit GFX color
+  u8g2Fonts.setBackgroundColor(bg);            // apply Adafruit GFX color
+  u8g2Fonts.setFont(u8g2_font_logisoso32_tr);  //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
+
+  display.setPartialWindow(display.height() / 2, 0, display.width(), display.height() / 2);  // x,y,width,height
+  //this sets a window for the partial update, so the values can update without refreshing the entire screen.
+
+  display.firstPage();
+  do {
+    display.fillScreen(bg);
+    u8g2Fonts.setCursor(40, display.height());  // x , y
+    u8g2Fonts.print("icon 1");
+	
+    u8g2Fonts.setCursor(120, display.height());  // x , y	
+    u8g2Fonts.print("icon 2");
+	
+  } while (display.nextPage());	
 }
 
 void updateTimeDisplay() {
@@ -198,11 +210,8 @@ void updateTimeDisplay() {
   do {
     display.fillScreen(bg);
     // Display first line
-    u8g2Fonts.setCursor(display.width() / 2 - 0, 40);  // x , y
+    u8g2Fonts.setCursor(0, 40);  // x , y
 
-    //Serial.print(Hour);
-    //Serial.print(":");
-    //Serial.println(Minute);
     u8g2Fonts.print(Hour);
     u8g2Fonts.print(":");
     u8g2Fonts.print(Minute);
