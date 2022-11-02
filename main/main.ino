@@ -40,9 +40,9 @@ uint16_t fg = GxEPD_BLACK;
 DS3231 Clock;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
-const uint8_t BT2_font[62] U8G2_FONT_SECTION("BT_font") =
-  "\2\0\3\2\4\4\2\1\5\11\17\0\0\0\0\0\0\0\0\0\0\0! \32\370\347\313\1\71I\243"
-  "$\312\222R\246\244\226,\211\222(+\205I*\207\0!\5\0\346\0\0\0\0\4\377\377\0";
+// const uint8_t BT2_font[62] U8G2_FONT_SECTION("BT_font") =
+//   "\2\0\3\2\4\4\2\1\5\11\17\0\0\0\0\0\0\0\0\0\0\0! \32\370\347\313\1\71I\243"
+//   "$\312\222R\246\244\226,\211\222(+\205I*\207\0!\5\0\346\0\0\0\0\4\377\377\0";
 
 static unsigned char gImage_a[] = { 0x00,0x01,0x2F,0x00,0x30,0x00,
 0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x01,0x80,0x00,0x00,0x00,0x00,0x01,0x80,
@@ -65,29 +65,32 @@ static unsigned char gImage_a[] = { 0x00,0x01,0x2F,0x00,0x30,0x00,
 0x01,0x80,0xC1,0x80,0x00,0x00,0x01,0x80,0x7F,0x00,0x00,0x00,0x00,0x00,0x3E,0x00,
 };
 
-
-//void U8G2::drawBitmap(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t cnt, u8g2_uint_t h, const uint8_t *bitmap);
+// prototype needed
 void updateTimeDisplay(byte Hour = 100, byte Minute = 0);
 
 void setup() {
-  pinMode(relayPin, OUTPUT);
   display.init();
   display.firstPage();
   u8g2Fonts.begin(display);  // connect u8g2 procedures to Adafruit GFX
-  delay(1000);
+  delay(100);
   display.setRotation(1);  // 0--> No rotation ,  1--> rotate 90 deg
 
   u8g2Fonts.setFontMode(1);          // use u8g2 transparent mode (this is default)
   u8g2Fonts.setFontDirection(0);     // left to right (this is default)
   u8g2Fonts.setForegroundColor(fg);  // apply Adafruit GFX color
   u8g2Fonts.setBackgroundColor(bg);  // apply Adafruit GFX color
+  
   //For the RTC
   Serial.begin(9600);
   Wire.begin();  //PIN XX & XX
+  
+  // Button and acrtuator init
   pinMode(button1pin, INPUT_PULLUP);
   pinMode(button2pin, INPUT_PULLUP);
-  displayLogo();
+  pinMode(relayPin, OUTPUT);
+
   displayChoice("Programme", "Now");
+  displayLogo();  
 }
 
 void loop() {
@@ -99,69 +102,70 @@ void loop() {
   }
   lastMinute = TimeOftheDay;
 
+  // No mode selected
   if (heatingProgramState == 0) {
-    // Bouton Chauffage programmé (horloge)
+    // Bouton Chauffage programmée
+    // If long press => Clock Setting Program
+    // If Short press => set heatingProgramState to 1 
+    // Bouton Chauffe immédiate
+    // If pressed => set heatingProgramState to 2
+    
     if (digitalRead(button1pin) == LOW) {
       timeWhenPressed = millis();
       while (digitalRead(button1pin) == LOW) {
-        delay(10);
-        if (millis() - timeWhenPressed > 1000) {  //long Press
-          Serial.println("Reglage horloge");
-          changingClock();
-        }
+        if (millis() - timeWhenPressed > 1000) changingClock();  //long Press Btn1
       }
-      if (millis() - timeWhenPressed < 1000) {  //Short Press
-        //Ajouteractiver chauffe programmée à 5h (heatingProgramState)
-        startHeatingTOTD = 5;
-        displayStartHeatingTOTD(startHeatingTOTD);
-        displayChoice("Suivant", "Annuler");
-        heatingProgramState = 1;
-      }
+      if (millis() - timeWhenPressed < 1000) heatingProgramState = 1; //Short Press Btn 1
     }
-    if (digitalRead(button2pin) == LOW) {
-      while (digitalRead(button2pin) == LOW) delay(10);
-      heatingProgramState = 2;
+    if (digitalRead(button2pin) == LOW) heatingProgramState = 2; //Press Btn 2
+  } 
+  
+  // Mode Programmed heating  
+  if (heatingProgramState == 1) {
+    if (!heatingState){
       stopHeatingTOTD = TimeOftheDay + heatingDuration;
       displayStopHeatingTOTD(stopHeatingTOTD - TimeOftheDay);
       StartHeating();
-      displayChoice("+15min", "Arrêt");
+      displayChoice("+15min", "Arrêt");    
     }
-  } else if (heatingProgramState == 1) {  // Mode Programmed heating
-    if (digitalRead(button1pin) == LOW) {
-      while (digitalRead(button1pin) == LOW) {
-        delay(10);
-      }
+    
+    if (digitalRead(button1pin) == LOW) { //If want to change programmed start
+      //while (digitalRead(button1pin) == LOW) delay(10);
       startHeatingTOTD = startHeatingTOTD + 1;
       displayStartHeatingTOTD(startHeatingTOTD);
     }
 
-    if (digitalRead(button2pin) == LOW) {
-      while (digitalRead(button2pin) == LOW) {
-        delay(10);
-      }
+    if (digitalRead(button2pin) == LOW) { //If want to stop programmed start
+      //while (digitalRead(button2pin) == LOW) delay(10);
       displayStartHeatingTOTD(0);
       StopHeating();
     }
+    
+    // Still not sure about this part ...
+    //I don't find it elegant
     if (!nextday && TimeOftheDay == 0) nextday = true;
     if (nextday) {
-      if (TimeOftheDay >= startHeatingTOTD && TimeOftheDay < stopHeatingTOTD) StartHeating();
+      if (TimeOftheDay == startHeatingTOTD) StartHeating();
       else if (TimeOftheDay > stopHeatingTOTD) StopHeating();
     }
-  } else if (heatingProgramState == 2) {  // Mode heating Now
+  } 
+    
+  // Mode heating Now
+  else if (heatingProgramState == 2) {  
+    if (!heatingState){
+        startHeatingTOTD = 5;
+        displayStartHeatingTOTD(startHeatingTOTD);
+        displayChoice("Suivant", "Annuler");
+    }
     if (digitalRead(button1pin) == LOW) {
-      while (digitalRead(button1pin) == LOW) {
-        delay(10);
-      }
+      //while (digitalRead(button1pin) == LOW) delay(10);  
       stopHeatingTOTD = stopHeatingTOTD + 15;  //Add a limit
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayStopHeatingTOTD(HeatingTimeLeft);
+      //while (digitalRead(button1pin) == LOW) delay(10); //If necessary to avoid long press
     }
-    if (digitalRead(button2pin) == LOW) {
-      while (digitalRead(button2pin) == LOW) {
-        delay(10);
-      }
-      StopHeating();
-    }
+    if (digitalRead(button2pin) == LOW) StopHeating(); //If want to stop immediat heating
+    
     if (HeatingTimeLeft != stopHeatingTOTD - TimeOftheDay) {
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayStopHeatingTOTD(HeatingTimeLeft);
@@ -170,17 +174,19 @@ void loop() {
   }
 }
 
-void StopHeating() {
-  heatingProgramState = 0;
-  setFilPiloteState(false);
-  displayChoice("Programme", "Now");
-}
-
 void StartHeating() {
   setFilPiloteState(true);
-  // Symbloe Chauffe
+  heatingState=true;
+  displayLogo(true);
 }
 
+void StopHeating() {
+  heatingProgramState = 0;
+  heatingState=false;
+  setFilPiloteState(false);
+  displayChoice("Programme", "Now");
+  displayLogo(false);
+}
 
 void setDate(byte Hour, byte Minute) {
   //Set RTC
@@ -214,10 +220,12 @@ void changingClock() {
   unsigned long timeSinceLastPress = millis();
   byte Hour = Clock.getHour(h12, PM);
   byte Minute = Clock.getMinute();
-
+  Serial.println("Reglage horloge");
+  
   displayChoice("H +", "Min +");
   // Exit the loop if 4000ms passed without any press
   while (millis() - timeSinceLastPress < 4000) {
+    //Button Hour +
     while (digitalRead(button1pin) == LOW) {
       timeSinceLastPress = millis();
       if (Hour < 23) Hour = Hour + 1;
@@ -227,22 +235,19 @@ void changingClock() {
 
     //Button Minute +
     if (digitalRead(button2pin) == LOW) {
-
-      if (Minute < 59) Minute = Minute + 1;
+      if (Minute < 59) Minute = Minute + 1; //one by one
       else Minute = 0;
       updateTimeDisplay(Hour, Minute);
       while (digitalRead(button2pin) == LOW) {
-        if (Minute < 49) Minute = Minute + 10;
+        if (Minute < 49) Minute = Minute + 10;//10 by 10 if long press
         else Minute = 0;
         updateTimeDisplay(Hour, Minute);
-        //timeSinceLastPress = millis();
       }
       timeSinceLastPress = millis();
     }
   }
-
   setDate(Hour, Minute);
   displayChoice("Heure Changee", "");
-  delay(1000);
+  delay(1500);
   displayChoice("Programme", "Now");
 }
