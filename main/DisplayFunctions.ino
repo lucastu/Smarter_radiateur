@@ -62,8 +62,6 @@ void displayLogo() {
   byte PartialWindowY = 0;
   byte PartialWindowWidth = 50;
   byte PartialWindowHeight = display.height() / 2 + 10;
-  //Serial.println(display.height() / 2 + 10);
-  //u8g2Fonts.setFont(BT2_font);  //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
 
   display.setPartialWindow(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight);  // x,y,width,height
   //this sets a window for the partial update, so the values can update without refreshing the entire screen.
@@ -73,7 +71,7 @@ void displayLogo() {
     display.fillScreen(bg);
     // Display first line
     display.drawRect(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK);
-    u8g2Fonts.drawXBM( PartialWindowX, PartialWindowY,PartialWindowWidth, PartialWindowHeight,  gImage_a);
+    display.drawInvertedBitmap(PartialWindowX, PartialWindowY, gImage_a,PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK)
   } while (display.nextPage());
 }
 
