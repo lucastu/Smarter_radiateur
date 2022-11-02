@@ -56,7 +56,7 @@ void updateTimeDisplay(byte Hour = 100, byte Minute = 0) {
   } while (display.nextPage());
 }
 
-void displayLogo() {
+void displayLogo(byte State) {
   //Serial.println("Setting Screen");
   byte PartialWindowX = 90;
   byte PartialWindowY = 0;
@@ -69,9 +69,9 @@ void displayLogo() {
   display.firstPage();
   do {
     display.fillScreen(bg);
-    // Display first line
     display.drawRect(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK);
-    display.drawInvertedBitmap(PartialWindowX, PartialWindowY, gImage_a,PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK)
+    
+    if (State) display.drawInvertedBitmap(PartialWindowX, PartialWindowY, gImage_a,PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK);
   } while (display.nextPage());
 }
 
