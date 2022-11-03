@@ -128,7 +128,7 @@ void loop() {
     */
     if (!isProgrammed) {
       startHeatingTOTD = 5 * 60;
-      displayStartHeatingTOTD(startHeatingTOTD);
+      displayprog(1, startHeatingTOTD);
       displayChoice("+30min", "Annuler");
       isProgrammed=true;
       
@@ -137,10 +137,10 @@ void loop() {
     }
     if (digitalRead(button1pin) == LOW) {  //If want to change programmed start time
       startHeatingTOTD = startHeatingTOTD + 30;
-      displayStartHeatingTOTD(startHeatingTOTD);
+      displayprog(1, startHeatingTOTD);
     }
     if (digitalRead(button2pin) == LOW) {  //If want to stop programmed start
-      displayStartHeatingTOTD(0);
+      displayprog(0,0);
       StopHeating();
       isProgrammed=false;
     }
@@ -161,7 +161,7 @@ void loop() {
     //first start
     if (!heatingState) {
       stopHeatingTOTD = TimeOftheDay + heatingDuration;
-      displayStopHeatingTOTD(stopHeatingTOTD - TimeOftheDay);
+      displayprog(2, stopHeatingTOTD - TimeOftheDay);
       StartHeating();
       displayChoice("+15min", "Arrêt");
     }
@@ -170,19 +170,19 @@ void loop() {
     if (digitalRead(button1pin) == LOW) { 
       if (stopHeatingTOTD - TimeOftheDay<= 165) stopHeatingTOTD = stopHeatingTOTD + 15;  //Set a limit
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
-      displayStopHeatingTOTD(HeatingTimeLeft);
+      displayprog(2, HeatingTimeLeft);
     }
     
     //If want to stop immediat heating   
     if (digitalRead(button2pin) == LOW) {
       StopHeating();  
-      displayStopHeatingTOTD(0);
+      displayprog(0,0);
     }
     
     //Refresh time left
     if (HeatingTimeLeft != stopHeatingTOTD - TimeOftheDay) { 
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
-      displayStopHeatingTOTD(HeatingTimeLeft);
+      displayprog(2, HeatingTimeLeft);
     }
     
     //End heating when time is reached
@@ -261,7 +261,6 @@ void changingClock() {
   Time changing function
   Button1 to add 1h
   Button2 to add 1min or 10min if long press
-  
   leave the function if no action in 4000ms
   */
   unsigned long timeSinceLastPress = millis();
@@ -293,7 +292,7 @@ void changingClock() {
     }
   }
   setDate(Hour, Minute);
-  displayChoice("Heure Changee", "");
+  displayChoice("Heure Changée", "");
   delay(1500);
-  displayChoice("Programme", "Now");
+  displayChoice("Programme", "Immédiat");
 }
