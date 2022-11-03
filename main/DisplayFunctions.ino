@@ -5,8 +5,7 @@ void displayChoice(char Choix1[], char Choix2[]) {
   byte PartialWindowWidth = display.width();
   byte PartialWindowHeight = display.height() / 2 - 10;
 
-  u8g2Fonts.setFont(u8g2_font_logisoso18_tf);  //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
-
+  u8g2Fonts.setFont(u8g2_font_logisoso18_tf);  
   display.setPartialWindow(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight);  // x,y,width,height
   //this sets a window for the partial update, so the values can update without refreshing the entire screen.
 
@@ -29,30 +28,25 @@ void updateTimeDisplay(byte Hour = 100, byte Minute = 0) {
   byte PartialWindowY = 0;
   byte PartialWindowWidth = 90;
   byte PartialWindowHeight = display.height() / 2 + 10;
-
-  u8g2Fonts.setFont(u8g2_font_logisoso32_tn);  //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
-
-  display.setPartialWindow(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight);  // x,y,width,height
-  //this sets a window for the partial update, so the values can update without refreshing the entire screen.
-
-  display.firstPage();
+  
   if (Hour == 100) {
     Hour = Clock.getHour(h12, PM);
     Minute = Clock.getMinute();
   }
-
+  
+  u8g2Fonts.setFont(u8g2_font_logisoso32_tn);  
+  display.setPartialWindow(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight);  // x,y,width,height
+  
+  display.firstPage();
   do {
     display.fillScreen(bg);
-    // Display first line
     //display.drawRect(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK);
-
     u8g2Fonts.setCursor(0, 50);           // x , y
-    if (Hour < 10) u8g2Fonts.print("0");  // Formatting to always have 2 digits in hour
+    if (Hour < 10) u8g2Fonts.print("0");  // Formatting to always display 2 digits hours
     u8g2Fonts.print(Hour);
     u8g2Fonts.print(":");
-    if (Minute < 10) u8g2Fonts.print("0");  // Formatting to always have 2 digits in minutes
+    if (Minute < 10) u8g2Fonts.print("0");  // Formatting to always display 2 digits minutes
     u8g2Fonts.print(Minute);
-
   } while (display.nextPage());
 }
 
@@ -109,13 +103,13 @@ void updateTimeDisplay(byte Hour = 100, byte Minute = 0) {
 //   } while (display.nextPage());
 // }
 
-void displayprog(byte mode, byte StartORStopHeatingTOTD)  {
+void displayprog(byte mode, unsigned int StartORStopHeatingTOTD)  {
   //Serial.println("Setting StopHeatingTOTD Screen");
   byte PartialWindowX = 100;
   byte PartialWindowY = 0;
   byte PartialWindowWidth = display.width() - 90;
   byte PartialWindowHeight =  display.height() / 2 ;
-  u8g2Fonts.setFont(u8g2_font_logisoso16_tr);  //u8g2_font_logisoso32_tn--->numbers only to save memory ; u8g2_font_logisoso32_tr , u8g2_font_logisoso32_tf -->numbers&letters
+  u8g2Fonts.setFont(u8g2_font_logisoso16_tr);
 
   display.setPartialWindow(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight);  // x,y,width,height
   //this sets a window for the partial update, so the values can update without refreshing the entire screen.
@@ -123,17 +117,22 @@ void displayprog(byte mode, byte StartORStopHeatingTOTD)  {
   do {
     display.fillScreen(bg);
     //display.drawRect(PartialWindowX, PartialWindowY, PartialWindowWidth, PartialWindowHeight, GxEPD_BLACK);
-    if (mode != 0) {
-      if (mode == 2) display.drawBitmap(PartialWindowX + 55, PartialWindowY, logo, 48, 48, GxEPD_BLACK); // x , y, bitmap, width, height, color
-      
-      u8g2Fonts.setCursor(PartialWindowX , PartialWindowY + 30);  // x , y
-      if (mode == 1 ) u8g2Fonts.print("Progr.");
-      else if (mode == 2) u8g2Fonts.print("Reste");
-      
-      u8g2Fonts.setCursor(PartialWindowX , PartialWindowY + 50);  // x , y
-      u8g2Fonts.print(StartORStopHeatingTOTD);
-      if (mode == 1 ) u8g2Fonts.print("h");
-      else if (mode == 2) u8g2Fonts.print("min.");
-    }
+      if (mode == 1){
+        u8g2Fonts.setCursor(PartialWindowX , PartialWindowY + 30);  // x , y
+        u8g2Fonts.print("Progr.");
+        u8g2Fonts.print((StartORStopHeatingTOTD-StartORStopHeatingTOTD%60)/60);
+        u8g2Fonts.print("h");
+        u8g2Fonts.print(StartORStopHeatingTOTD%60);
+      }
+      else if (mode == 2) {
+        display.drawBitmap(PartialWindowX + 55, PartialWindowY, logo, 48, 48, GxEPD_BLACK); // x , y, bitmap, width, height, color
+
+        u8g2Fonts.setCursor(PartialWindowX , PartialWindowY + 30);  // x , y
+        u8g2Fonts.print("Reste");
+
+        u8g2Fonts.setCursor(PartialWindowX , PartialWindowY + 50);  // x , y
+        u8g2Fonts.print(StartORStopHeatingTOTD);
+        u8g2Fonts.print("min.");
+      }
   } while (display.nextPage());
 }
