@@ -64,22 +64,24 @@ const unsigned char logo[294] PROGMEM = { 0X00,0X01,0X2F,0X00,0X30,0X00,
 void updateTimeDisplay(byte Hour = 100, byte Minute = 0);
 
 void setup() {
+  //Display Init
   display.init();
   display.firstPage();
   u8g2Fonts.begin(display);  // connect u8g2 procedures to Adafruit GFX
   delay(100);
+  
+  //General printing info
   display.setRotation(1);  // 0--> No rotation ,  1--> rotate 90 deg
-
   u8g2Fonts.setFontMode(1);          // use u8g2 transparent mode (this is default)
   u8g2Fonts.setFontDirection(0);     // left to right (this is default)
   u8g2Fonts.setForegroundColor(fg);  // apply Adafruit GFX color
   u8g2Fonts.setBackgroundColor(bg);  // apply Adafruit GFX color
 
-  //For the RTC
+  //Real Time Clock init
   Serial.begin(9600);
-  Wire.begin();  //PIN A2 & A3 ??
+  Wire.begin();  // PIN SDA(A4) & SCL(A5)
 
-  // Button and acrtuator init
+  // Button and actuator init
   pinMode(button1pin, INPUT_PULLUP);
   pinMode(button2pin, INPUT_PULLUP);
   pinMode(relayPin, OUTPUT);
@@ -124,16 +126,16 @@ void loop() {
     /*
     Mode Programmed heating
     when the start time is reached
-    then go to immediate heating mode
+    go to immediate heating mode
     */
     if (!isProgrammed) {
-      startHeatingTOTD = 5 * 60;
+      startHeatingTOTD = 5 * 60; // ==> 5AM
       displayprog(1, startHeatingTOTD);
       displayChoice("+30min", "Annuler");
       isProgrammed=true;
       
       if (startHeatingTOTD > TimeOftheDay) nextday = false;
-      else extday = true;
+      else nextday = true;
     }
     if (digitalRead(button1pin) == LOW) {  //If want to change programmed start time
       startHeatingTOTD = startHeatingTOTD + 30;
@@ -166,9 +168,9 @@ void loop() {
       displayChoice("+15min", "Arrêt");
     }
     
-    //If want extra time on the heater
+    //If want extra heating time
     if (digitalRead(button1pin) == LOW) { 
-      if (stopHeatingTOTD - TimeOftheDay<= 165) stopHeatingTOTD = stopHeatingTOTD + 15;  //Set a limit
+      stopHeatingTOTD =constrain(stopHeatingTOTD + 15, 0, 120);  //Set a limit [0,120]
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayprog(2, HeatingTimeLeft);
     }
@@ -187,6 +189,7 @@ void loop() {
     
     //End heating when time is reached
     if (TimeOftheDay >= stopHeatingTOTD) StopHeating();
+    
     WaitButtonRelease();
   }
 }
