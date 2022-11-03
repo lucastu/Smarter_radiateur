@@ -19,17 +19,18 @@ GxEPD2_BW<GxEPD2_213_T5D, MAX_HEIGHT(GxEPD2_213_T5D)> display(GxEPD2_213_T5D(/*C
 bool h12;
 bool PM;
 
-unsigned int startHeatingTOTD = 0;  //TOTD = Time Of The Day
-unsigned int stopHeatingTOTD = 0;
-unsigned int heatingProgramState = 0;  // 0 : not programmed; 1 : for the next day; 2 : now
+bool heatingProgramState = 0;  // 0 : not programmed; 1 : for the next day; 2 : now
 bool heatingState = false;
 unsigned int TimeOftheDay;
-const unsigned int LastTOTD = 1439;  //Is the last minute of the day (23h59)
-const byte heatingDuration = 1;      //in minute
 unsigned int HeatingTimeLeft;
+unsigned int startHeatingTOTD = 0;  //TOTD = Time Of The Day
+unsigned int stopHeatingTOTD = 0;
+
+//const unsigned int LastTOTD = 1439;  //Is the last minute of the day (23h59)
+byte heatingDuration;
 byte lastMinute = 0;
 unsigned long timeWhenPressed;
-bool buttonLastState = false;
+//bool buttonLastState = false;
 bool nextday;
 bool isProgrammed = false;
 uint16_t bg = GxEPD_WHITE;
@@ -76,7 +77,7 @@ void setup() {
 
   //For the RTC
   Serial.begin(9600);
-  Wire.begin();  //PIN XX & XX
+  Wire.begin();  //PIN A2 & A3 ??
 
   // Button and acrtuator init
   pinMode(button1pin, INPUT_PULLUP);
@@ -95,13 +96,15 @@ void loop() {
   }
   lastMinute = TimeOftheDay;
 
-  // No mode selected
   if (heatingProgramState == 0) {
-    // Bouton Chauffage programmée
-    // If long press => Clock Setting Program
-    // If Short press => set heatingProgramState to 1
-    // Bouton Chauffe immédiate
-    // If pressed => set heatingProgramState to 2
+    /* 
+    No mode active
+    Bouton Chauffage programmée
+    If long press => Clock Setting Program
+    If Short press => set heatingProgramState to 1
+    Bouton Chauffe immédiate
+    If pressed => set heatingProgramState to 2 
+    */
 
     if (digitalRead(button1pin) == LOW) {
       timeWhenPressed = millis();
@@ -109,24 +112,34 @@ void loop() {
         if (millis() - timeWhenPressed > 1000) changingClock();  //long Press Btn1
       }
       if (millis() - timeWhenPressed < 1000) heatingProgramState = 1;    //Short Press Btn 1
-    } else if (digitalRead(button2pin) == LOW) heatingProgramState = 2;  //Press Btn 2
+    } 
+    else if (digitalRead(button2pin) == LOW) {  //Press Btn 2
+      heatingProgramState = 2; 
+      heatingDuration = 45;
+    }
     WaitButtonRelease();
   }
 
-  // Mode Programmed heating
   if (heatingProgramState == 1) {
+    /*
+    Mode Programmed heating
+    when the start time is reached
+    then go to immediate heating mode
+    */
     if (!isProgrammed) {
-      startHeatingTOTD = 5;
+      startHeatingTOTD = 5 * 60;
       displayStartHeatingTOTD(startHeatingTOTD);
-      displayChoice("Suivant", "Annuler");
+      displayChoice("+30min", "Annuler");
       isProgrammed=true;
+      
+      if (startHeatingTOTD > TimeOftheDay) nextday = false;
+      else extday = true;
     }
-    if (digitalRead(button1pin) == LOW) {  //If want to change programmed start
-      startHeatingTOTD = startHeatingTOTD + 1;
+    if (digitalRead(button1pin) == LOW) {  //If want to change programmed start time
+      startHeatingTOTD = startHeatingTOTD + 30;
       displayStartHeatingTOTD(startHeatingTOTD);
     }
     if (digitalRead(button2pin) == LOW) {  //If want to stop programmed start
-      //while (digitalRead(button2pin) == LOW) delay(10);
       displayStartHeatingTOTD(0);
       StopHeating();
       isProgrammed=false;
@@ -134,61 +147,86 @@ void loop() {
 
     // Still not sure about this part ...
     //I don't find it elegant
-    if (!nextday && TimeOftheDay == 0) nextday = true;
-    if (nextday) {
+    if (!nextday && TimeOftheDay == 0) nextday = true; // if  new day starts
+    if (nextday && TimeOftheDay == startHeatingTOTD) {
+      heatingDuration = 60;
       isProgrammed=false;
-      if (TimeOftheDay == startHeatingTOTD) heatingProgramState == 2;
+      heatingProgramState == 2;
     }
     WaitButtonRelease();
   }
 
   // Mode heating Now
   else if (heatingProgramState == 2) {
+    //first start
     if (!heatingState) {
       stopHeatingTOTD = TimeOftheDay + heatingDuration;
       displayStopHeatingTOTD(stopHeatingTOTD - TimeOftheDay);
       StartHeating();
       displayChoice("+15min", "Arrêt");
     }
-    if (digitalRead(button1pin) == LOW) {
-      if (stopHeatingTOTD - TimeOftheDay<= 165) stopHeatingTOTD = stopHeatingTOTD + 15;  
+    
+    //If want extra time on the heater
+    if (digitalRead(button1pin) == LOW) { 
+      if (stopHeatingTOTD - TimeOftheDay<= 165) stopHeatingTOTD = stopHeatingTOTD + 15;  //Set a limit
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayStopHeatingTOTD(HeatingTimeLeft);
     }
+    
+    //If want to stop immediat heating   
     if (digitalRead(button2pin) == LOW) {
-      StopHeating();  //If want to stop immediat heating
+      StopHeating();  
       displayStopHeatingTOTD(0);
     }
-    if (HeatingTimeLeft != stopHeatingTOTD - TimeOftheDay) {
+    
+    //Refresh time left
+    if (HeatingTimeLeft != stopHeatingTOTD - TimeOftheDay) { 
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayStopHeatingTOTD(HeatingTimeLeft);
     }
+    
+    //End heating when time is reached
     if (TimeOftheDay >= stopHeatingTOTD) StopHeating();
     WaitButtonRelease();
   }
 }
 
 void WaitButtonRelease() {
-  while (digitalRead(button1pin) == LOW) delay(10);
-  while (digitalRead(button2pin) == LOW) delay(10);
+  /*
+  Wait for buttons to be released
+  To avoid suprises on long presses
+  */
+  while (digitalRead(button1pin) == LOW);
+  while (digitalRead(button2pin) == LOW);
 }
 
 void StartHeating() {
-  setFilPiloteState(true);
+  /*
+  Start the heating by setting the relay
+  that control the Pilot Wireof the heater
+  */
+  digitalWrite(relayPin, HIGH);
+  //Serial.println("Heating Started");
   heatingState = true;
-  //displayLogo(true);
 }
 
 void StopHeating() {
+  /*
+  Stop the heating by setting the relay
+  that control the Pilot Wireof the heater
+  */  
   heatingProgramState = 0;
   heatingState = false;
-  setFilPiloteState(false);
+  digitalWrite(relayPin, LOW);
+  //Serial.println("Heating Stopped");
   displayChoice("Programme", "Now");
-  //displayLogo(false);
 }
 
 void setDate(byte Hour, byte Minute) {
-  //Set RTC
+  /*
+  Set RTC time from arguments
+  and print it to Serial
+  */
   Clock.setClockMode(false);  // set to 24h
   Clock.setMinute(Minute);
   Clock.setHour(Hour);
@@ -200,29 +238,38 @@ void setDate(byte Hour, byte Minute) {
 }
 
 byte ReadTimeOfTheDay() {
+  /*
+  return the numbre of minutes passed in the day
+  */
   byte minuteOftheDay = Clock.getHour(h12, PM) * 60 + Clock.getMinute();
   return minuteOftheDay;
 }
 
-void setFilPiloteState(bool State) {
-  // Commande le relais du fil pilote
-  if (State) {
-    digitalWrite(relayPin, HIGH);
-    Serial.println("Heating Started");
-  } else {
-    digitalWrite(relayPin, LOW);
-    Serial.println("Heating Stopped");
-  }
-}
+// void setFilPiloteState(bool State) {
+//   // Commande le relais du fil pilote
+//   if (State) {
+//     digitalWrite(relayPin, HIGH);
+//     Serial.println("Heating Started");
+//   } else {
+//     digitalWrite(relayPin, LOW);
+//     Serial.println("Heating Stopped");
+//   }
+// }
 
 void changingClock() {
+  /*
+  Time changing function
+  Button1 to add 1h
+  Button2 to add 1min or 10min if long press
+  
+  leave the function if no action in 4000ms
+  */
   unsigned long timeSinceLastPress = millis();
   byte Hour = Clock.getHour(h12, PM);
   byte Minute = Clock.getMinute();
-  Serial.println("Reglage horloge");
+  //Serial.println("Reglage horloge");
 
   displayChoice("H +", "Min +");
-  // Exit the loop if 4000ms passed without any press
   while (millis() - timeSinceLastPress < 4000) {
     //Button Hour +
     while (digitalRead(button1pin) == LOW) {
@@ -234,7 +281,7 @@ void changingClock() {
 
     //Button Minute +
     if (digitalRead(button2pin) == LOW) {
-      if (Minute < 59) Minute = Minute + 1;  //one by one
+      if (Minute < 59) Minute = Minute + 1;  //1 by 1
       else Minute = 0;
       updateTimeDisplay(Hour, Minute);
       while (digitalRead(button2pin) == LOW) {
