@@ -19,7 +19,7 @@ GxEPD2_BW<GxEPD2_213_T5D, MAX_HEIGHT(GxEPD2_213_T5D)> display(GxEPD2_213_T5D(/*C
 bool h12;
 bool PM;
 
-bool heatingProgramState = 0;  // 0 : not programmed; 1 : for the next day; 2 : now
+byte heatingProgramState = 0;  // 0 : not programmed; 1 : for the next day; 2 : now
 bool heatingState = false;
 unsigned int TimeOftheDay;
 unsigned int HeatingTimeLeft;
@@ -86,7 +86,7 @@ void setup() {
   pinMode(button2pin, INPUT_PULLUP);
   pinMode(relayPin, OUTPUT);
 
-  displayChoice("Programme", "Now");
+  displayChoice("Program.", "Immédiat");
 }
 
 void loop() {
@@ -94,7 +94,6 @@ void loop() {
   //Update time on the screen if needed
   if (TimeOftheDay != lastMinute) {
     updateTimeDisplay();
-    Serial.println("Clock display Updated");
   }
   lastMinute = TimeOftheDay;
 
@@ -153,7 +152,7 @@ void loop() {
     if (nextday && TimeOftheDay == startHeatingTOTD) {
       heatingDuration = 60;
       isProgrammed=false;
-      heatingProgramState == 2;
+      heatingProgramState = 2;
     }
     WaitButtonRelease();
   }
@@ -170,7 +169,7 @@ void loop() {
     
     //If want extra heating time
     if (digitalRead(button1pin) == LOW) { 
-      stopHeatingTOTD =constrain(stopHeatingTOTD + 15, 0, 120);  //Set a limit [0,120]
+      stopHeatingTOTD =constrain(stopHeatingTOTD + 15, 0, TimeOftheDay + 120);  //Set a limit [0,120]
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayprog(2, HeatingTimeLeft);
     }
@@ -209,7 +208,6 @@ void StartHeating() {
   that control the Pilot Wireof the heater
   */
   digitalWrite(relayPin, HIGH);
-  //Serial.println("Heating Started");
   heatingState = true;
 }
 
@@ -221,8 +219,7 @@ void StopHeating() {
   heatingProgramState = 0;
   heatingState = false;
   digitalWrite(relayPin, LOW);
-  //Serial.println("Heating Stopped");
-  displayChoice("Programme", "Now");
+  displayChoice("Program.", "Immédiat");
 }
 
 void setDate(byte Hour, byte Minute) {
@@ -248,17 +245,6 @@ byte ReadTimeOfTheDay() {
   return minuteOftheDay;
 }
 
-// void setFilPiloteState(bool State) {
-//   // Commande le relais du fil pilote
-//   if (State) {
-//     digitalWrite(relayPin, HIGH);
-//     Serial.println("Heating Started");
-//   } else {
-//     digitalWrite(relayPin, LOW);
-//     Serial.println("Heating Stopped");
-//   }
-// }
-
 void changingClock() {
   /*
   Time changing function
@@ -269,9 +255,8 @@ void changingClock() {
   unsigned long timeSinceLastPress = millis();
   byte Hour = Clock.getHour(h12, PM);
   byte Minute = Clock.getMinute();
-  //Serial.println("Reglage horloge");
 
-  displayChoice("H +", "Min +");
+  displayChoice("Heure+", "Minute+");
   while (millis() - timeSinceLastPress < 4000) {
     //Button Hour +
     while (digitalRead(button1pin) == LOW) {
@@ -297,5 +282,5 @@ void changingClock() {
   setDate(Hour, Minute);
   displayChoice("Heure Changée", "");
   delay(1500);
-  displayChoice("Programme", "Immédiat");
+  displayChoice("Program.", "Immédiat");
 }
