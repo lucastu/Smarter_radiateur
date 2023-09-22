@@ -35,6 +35,7 @@ bool nextday;
 bool isProgrammed = false;
 uint16_t bg = GxEPD_WHITE;
 uint16_t fg = GxEPD_BLACK;
+
 //Objects
 DS3231 Clock;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
@@ -74,8 +75,8 @@ void setup() {
   display.setRotation(1);  // 0--> No rotation ,  1--> rotate 90 deg
   u8g2Fonts.setFontMode(1);          // use u8g2 transparent mode (this is default)
   u8g2Fonts.setFontDirection(0);     // left to right (this is default)
-  u8g2Fonts.setForegroundColor(fg);  // apply Adafruit GFX color
-  u8g2Fonts.setBackgroundColor(bg);  // apply Adafruit GFX color
+  u8g2Fonts.setForegroundColor(fg);  // apply Adafruit GFX foreground color
+  u8g2Fonts.setBackgroundColor(bg);  // apply Adafruit GFX background color
 
   //Real Time Clock init
   Serial.begin(9600);
@@ -147,7 +148,7 @@ void loop() {
     }
 
     // Still not sure about this part ...
-    //I don't find it elegant
+    // I don't find it elegant
     if (!nextday && TimeOftheDay == 0) nextday = true; // if  new day starts
     if (nextday && TimeOftheDay == startHeatingTOTD) {
       heatingDuration = 60;
@@ -169,7 +170,7 @@ void loop() {
     
     //If want extra heating time
     if (digitalRead(button1pin) == LOW) { 
-      stopHeatingTOTD =constrain(stopHeatingTOTD + 15, 0, TimeOftheDay + 120);  //Set a limit [0,120]
+      stopHeatingTOTD = constrain(stopHeatingTOTD + 15, 0, TimeOftheDay + 120);  //Set a limit [0,120]
       HeatingTimeLeft = stopHeatingTOTD - TimeOftheDay;
       displayprog(2, HeatingTimeLeft);
     }
