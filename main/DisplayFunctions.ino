@@ -1,4 +1,7 @@
 void displayChoice(char Choix1[], char Choix2[]) {
+  ***
+  Display in the lower part of the screen
+  ***  
   //Serial.println("Setting Screen");
   byte PartialWindowX = 0;
   byte PartialWindowY = display.height() / 2 + 15;
