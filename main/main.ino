@@ -21,12 +21,12 @@ bool PM;
 
 byte heatingProgramState = 0;  // 0 : not programmed; 1 : for the next day; 2 : now
 bool heatingState = false;
-unsigned int TimeOftheDay;
-unsigned int HeatingTimeLeft;
+unsigned int TimeOftheDay;          //Time of the day in minutes starting at midnight
+unsigned int HeatingTimeLeft;       //In minutes
 unsigned int startHeatingTOTD = 0;  //TOTD = Time Of The Day
 unsigned int stopHeatingTOTD = 0;
 
-//const unsigned int LastTOTD = 1439;  //Is the last minute of the day (23h59)
+//const unsigned int LastTOTD = 1439;  //Last minute of the day (23h59)
 byte heatingDuration;
 byte lastMinute = 0;
 unsigned long timeWhenPressed;
@@ -71,7 +71,7 @@ void setup() {
   u8g2Fonts.begin(display);  // connect u8g2 procedures to Adafruit GFX
   delay(100);
   
-  //General printing info
+  //General display printing info
   display.setRotation(1);  // 0--> No rotation ,  1--> rotate 90 deg
   u8g2Fonts.setFontMode(1);          // use u8g2 transparent mode (this is default)
   u8g2Fonts.setFontDirection(0);     // left to right (this is default)
