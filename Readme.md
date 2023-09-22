@@ -1,4 +1,4 @@
-Commanade de radiateur via fil pilote avec arduino
+Commande de radiateur via fil pilote avec arduino
 
 based on  https://www.instructables.com/E-Paper-Display-Partial-Refresh-With-Arduino/
 
