@@ -1,7 +1,8 @@
 // Based On https://www.aranacorp.com/fr/utilisation-dun-module-ds3231-avec-arduino/
+
 //Libraries
-#include <Wire.h>//https://www.arduino.cc/en/reference/wire
-#include <DS3231.h>//https://github.com/NorthernWidget/DS3231
+#include <Wire.h>      //https://www.arduino.cc/en/reference/wire
+#include <DS3231.h>    //https://github.com/NorthernWidget/DS3231
 
 //Variables
 int Hour ;
@@ -9,10 +10,11 @@ int Minute ;
 int Second ;
 bool h12 ;
 bool PM ;
+
 //Objects
 DS3231 Clock;
+
 void setup() {
- 	//Init Serial USB
  	Serial.begin(9600);
  	Wire.begin();
   testsetDate(12, 11);
@@ -25,7 +27,6 @@ void loop() {
 
 void testsetDate(int Hour, int Minute){
   // Function just for test purpose
-  
   Serial.print("Setting date to : ");
   Serial.print(Hour);
   Serial.print("H ");
